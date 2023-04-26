@@ -72,6 +72,8 @@ class CNN4AugBase(LightningModule):
         self.modelname= modelname
         self.x_to_plot = None
         self.y_to_plot = None
+        self.class_labels = {0: "background", 2: "label nerve"}
+        self.class_predictions = {0: "background", 1: "predicted nerve"}
 
     def forward(self, x):
         if self.modelname == 'UNerveV1':
@@ -153,24 +155,38 @@ class CNN4AugBase(LightningModule):
         #     )
         
         label_array = self.y_to_plot.detach().cpu().numpy()
+        label_array[label_array == 1] = 2
         # label_image = wandb.Image(
         #     label_array, 
         #     caption=f"Label (Epoch: {self.trainer.current_epoch})"
         #     )
         # wandb.log({"Predictions": image_array, "Labels": label_array"})
+        actual_image = torchvision.transforms.CenterCrop(420)(self.x_to_plot[0].detach().cpu()).numpy()
 
-        fig, ax = plt.subplots(1, 3)
-        fig.suptitle(f"Epoch: {self.trainer.current_epoch}", fontsize=16)
-        ax[0].imshow(label_array)
-        ax[0].set_title('Label')
-        ax[1].imshow(image_array)
-        ax[1].set_title('Prediction')
-        ax[2].imshow(torchvision.transforms.CenterCrop(420)(self.x_to_plot[0].detach().cpu()).numpy(), cmap='gray')
-        ax[2].imshow(image_array, cmap="summer", alpha=0.2)
-        ax[2].set_title('Actual Image\n with\n prediction overlay')
-        plt.tight_layout()
-        
-        wandb.log({"Images": fig})
+        wandb.log(
+        {"my_image_key" : wandb.Image(actual_image, masks={
+            "predictions" : {
+                "mask_data" : image_array,
+                "class_labels" : self.class_predictions
+            },
+            "ground_truth" : {
+                "mask_data" : label_array,
+                "class_labels" : self.class_labels
+            }
+        })})
+
+        # fig, ax = plt.subplots(1, 3)
+        # fig.suptitle(f"Epoch: {self.trainer.current_epoch}", fontsize=16)
+        # ax[0].imshow(label_array)
+        # ax[0].set_title('Label')
+        # ax[1].imshow(image_array)
+        # ax[1].set_title('Prediction')
+        # ax[2].imshow(actual_image, cmap='gray')
+        # ax[2].imshow(image_array, cmap="summer", alpha=0.2)
+        # ax[2].set_title('Actual Image\n with\n prediction overlay')
+        # plt.tight_layout()
+        # wandb.log({"Images": fig})
+
         # avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         # self.log('avg_loss', avg_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         # return {"avg_val_loss": avg_loss}

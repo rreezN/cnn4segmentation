@@ -4,7 +4,6 @@ from model import UNerveV1, UNerveV2
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, TQDMProgressBar
 from dataloader import MyDataModule
-import getpass
 import wandb
 import random
 import yaml
@@ -36,7 +35,10 @@ np.random.seed(PARAMS["seed"])
 
 
 def train() -> None:
-    model = UNerveV1(PARAMS)
+    if PARAMS["model_name"] == "UNerveV1":
+        model = UNerveV1(PARAMS)
+    elif PARAMS["model_name"] == "UNerveV2":
+        model = UNerveV2(PARAMS)
     checkpoint_callback = ModelCheckpoint(
         dirpath="./models/" + PARAMS["model_name"],
         monitor="val_loss",
