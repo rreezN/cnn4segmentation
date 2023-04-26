@@ -96,6 +96,13 @@ class MyDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test_data, batch_size=self.current_batch_size, num_workers=1, shuffle=False)
 
+    # def getWeightMap(self, x, y):
+    #     _, mask_matrix = readData(x, y, H=132, W=132)
+    #     weights = torch.zeros_like(mask_matrix)
+    #     for im in range(len(batch)):
+    #         weights[im] = weight_map(mask_matrix[im], 10, 5, background_class=0)
+    #     return weights
+
 
 if __name__ == "__main__":
     print("Running dataloader.py as main file.")
