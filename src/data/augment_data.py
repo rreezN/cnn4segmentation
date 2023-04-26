@@ -10,6 +10,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
+from albumentations import ElasticTransform, Compose
 
 
 def largest_rotated_rect(w, h, angle):
@@ -105,6 +106,12 @@ def augment_image(img, label):
         augmented_img = cropped_img.resize(img.size)
         augmented_label = cropped_label.resize(img.size)
 
+    # Elastic transform
+    elasticTransfrom = Compose(ElasticTransform(alpha=40, sigma=5, alpha_affine=10, approximate=True, p=0.5))
+    aug = elasticTransfrom(image=np.array(augmented_img), mask=np.array(augmented_label))
+    augmented_img = Image.fromarray(aug["image"])
+    augmented_label = Image.fromarray(aug["mask"])
+
     # Flip image
     flip_choices = ['horizontal', 'vertical', 'diagonal', 'none']
     flip_choice = random.choice(flip_choices)
@@ -120,10 +127,16 @@ def augment_image(img, label):
             augmented_label = augmented_label.transpose(method=Image.TRANSPOSE)
         case _:
             pass
+
+    # Convert label to binary
     augmented_label_arr = np.array(augmented_label)
     augmented_label_arr[augmented_label_arr > 128] = 255
     augmented_label_arr[augmented_label_arr <= 128] = 0
     augmented_label = Image.fromarray(augmented_label_arr)
+
+    # Crop image
+    augmented_img = crop_around_center(augmented_img, 508, 508)
+    augmented_label = crop_around_center(augmented_label, 508, 508)
     return augmented_img, augmented_label
 
 
@@ -149,12 +162,8 @@ def main(input_filepath, output_filepath):
         img_name = train_img.split('\\')[-1].split('.')[0]
         label_name = train_label.split('\\')[-1].split('.')[0]
 
-        # Write original images
-        img.save(f"{output_filepath}/train_images/{img_name}_{0}.png")
-        label.save(f"{output_filepath}/train_labels/{label_name}_{0}.png")
-
         # Augment
-        for j in range(10):
+        for j in range(100):
             augmented_image, augmented_label = augment_image(img, label)
             augmented_image.save(f"{output_filepath}/train_images/{img_name}_{j + 1}.png")
             augmented_label.save(f"{output_filepath}/train_labels/{label_name}_{j + 1}.png")

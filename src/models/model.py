@@ -80,31 +80,25 @@ class CNN4AugBase(LightningModule):
             x2 = torch.relu(self.conv2_2(torch.relu(self.conv2_1(self.pool(x1)))))
             x3 = torch.relu(self.conv3_2(torch.relu(self.conv3_1(self.pool(x2)))))
             x4 = torch.relu(self.conv4_2(torch.relu(self.conv4_1(self.pool(x3)))))
-            x5 = torch.relu(self.conv5_2(torch.relu(self.conv5_1(self.pool(x4)))))
 
             # Decoder
-            x6 = torch.relu(self.upconv1(x5))
-            x4_ = torchvision.transforms.Resize(x6.shape[-2:], antialias=True)(x4)
-            x6 = torch.cat((x4_, x6), dim=1)
-            x6 = torch.relu(self.conv6_2(torch.relu(self.conv6_1(x6))))
+            x5 = torch.relu(self.upconv1(x4))
+            x4_ = torchvision.transforms.Resize(x5.shape[-2:], antialias=True)(x3)
+            x5 = torch.cat((x4_, x5), dim=1)
+            x5 = torch.relu(self.conv6_2(torch.relu(self.conv6_1(x5))))
 
-            x7 = torch.relu(self.upconv2(x6))
-            x3_ = torchvision.transforms.Resize(x7.shape[-2:], antialias=True)(x3)
-            x7 = torch.cat((x3_, x7), dim=1)
-            x7 = torch.relu(self.conv7_2(torch.relu(self.conv7_1(x7))))
+            x6 = torch.relu(self.upconv2(x5))
+            x3_ = torchvision.transforms.Resize(x7.shape[-2:], antialias=True)(x2)
+            x6 = torch.cat((x3_, x6), dim=1)
+            x6 = torch.relu(self.conv7_2(torch.relu(self.conv7_1(x6))))
 
-            x8 = torch.relu(self.upconv3(x7))
-            x2_ = torchvision.transforms.Resize(x8.shape[-2:], antialias=True)(x2)
-            x8 = torch.cat((x2_, x8), dim=1)
-            x8 = torch.relu(self.conv8_2(torch.relu(self.conv8_1(x8))))
-
-            x9 = torch.relu(self.upconv4(x8))
-            x1_ = torchvision.transforms.Resize(x9.shape[-2:], antialias=True)(x1)
-            x9 = torch.cat((x1_, x9), dim=1)
-            x9 = torch.relu(self.conv9_2(torch.relu(self.conv9_1(x9))))
+            x7 = torch.relu(self.upconv3(x6))
+            x2_ = torchvision.transforms.Resize(x7.shape[-2:], antialias=True)(x1)
+            x7 = torch.cat((x2_, x7), dim=1)
+            x7 = torch.relu(self.conv8_2(torch.relu(self.conv8_1(x7))))
 
             # Output
-            out = self.out(x9)
+            out = self.out(x7)
             return out
         
         elif self.modelname == 'UNerveV2':
@@ -150,7 +144,7 @@ class CNN4AugBase(LightningModule):
         return {"val_loss": loss}
 
     def on_validation_epoch_end(self):
-        y_hat = self.forward(self.x_to_plot.view(1, 1, 132, 132))
+        y_hat = self.forward(self.x_to_plot.view(1, 1, 508, 508))
         
         image_array = torch.argmax(y_hat, 1)[0].detach().cpu().numpy()
         # pred_image = wandb.Image(
@@ -171,7 +165,7 @@ class CNN4AugBase(LightningModule):
         ax[0].set_title('Label')
         ax[1].imshow(image_array)
         ax[1].set_title('Prediction')
-        ax[2].imshow(torchvision.transforms.CenterCrop(92)(self.x_to_plot[0].detach().cpu()).numpy(), cmap='gray')
+        ax[2].imshow(torchvision.transforms.CenterCrop(420)(self.x_to_plot[0].detach().cpu()).numpy(), cmap='gray')
         ax[2].imshow(image_array, cmap="summer", alpha=0.2)
         ax[2].set_title('Actual Image\n with\n prediction overlay')
         plt.tight_layout()
@@ -264,53 +258,37 @@ class UNerveV1(CNN4AugBase):
         self.conv4_1.bias.data.zero_()
         self.conv4_2.bias.data.zero_()
 
-        self.conv5_1 = nn.Conv2d(512, 1024, 3)
-        self.conv5_2 = nn.Conv2d(1024, 1024, 3)
-        nn.init.kaiming_normal_(self.conv5_1.weight, a=0.1)
-        nn.init.kaiming_normal_(self.conv5_2.weight, a=0.1)
-        self.conv5_1.bias.data.zero_()
-        self.conv5_2.bias.data.zero_()
-
         self.pool = nn.MaxPool2d(2, 2)
 
         # Decoder
-        self.upconv1 = nn.ConvTranspose2d(1024, 512, 2, stride=2)
-        self.conv6_1 = nn.Conv2d(1024, 512, 3)
-        self.conv6_2 = nn.Conv2d(512, 512, 3)
+        self.upconv1 = nn.ConvTranspose2d(512, 256, 2, stride=2)
+        self.conv6_1 = nn.Conv2d(512, 256, 3)
+        self.conv6_2 = nn.Conv2d(256, 256, 3)
         nn.init.kaiming_normal_(self.conv6_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv6_2.weight, a=0.1)
         self.conv6_1.bias.data.zero_()
         self.conv6_2.bias.data.zero_()
 
-        self.upconv2 = nn.ConvTranspose2d(512, 256, 2, stride=2)
-        self.conv7_1 = nn.Conv2d(512, 256, 3)
-        self.conv7_2 = nn.Conv2d(256, 256, 3)
+        self.upconv2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
+        self.conv7_1 = nn.Conv2d(256, 128, 3)
+        self.conv7_2 = nn.Conv2d(128, 128, 3)
         nn.init.kaiming_normal_(self.conv7_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv7_2.weight, a=0.1)
         self.conv7_1.bias.data.zero_()
         self.conv7_2.bias.data.zero_()
 
-        self.upconv3 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.conv8_1 = nn.Conv2d(256, 128, 3)
-        self.conv8_2 = nn.Conv2d(128, 128, 3)
+        self.upconv3 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.conv8_1 = nn.Conv2d(128, 64, 3)
+        self.conv8_2 = nn.Conv2d(64, 64, 3)
         nn.init.kaiming_normal_(self.conv8_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv8_2.weight, a=0.1)
         self.conv8_1.bias.data.zero_()
         self.conv8_2.bias.data.zero_()
 
-        self.upconv4 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.conv9_1 = nn.Conv2d(128, 64, 3)
-        self.conv9_2 = nn.Conv2d(64, 64, 3)
-        nn.init.kaiming_normal_(self.conv9_1.weight, a=0.1)
-        nn.init.kaiming_normal_(self.conv9_2.weight, a=0.1)
-        self.conv9_1.bias.data.zero_()
-        self.conv9_2.bias.data.zero_()
-
         # Output
         self.out = nn.Conv2d(64, self.n_classes, kernel_size=1)
         nn.init.kaiming_normal_(self.out.weight, a=0.1)
         self.out.bias.data.zero_()
-
 
     def activation_func(self):
         if self.activation_function == "ReLU":
@@ -381,7 +359,6 @@ class UNerveV2(CNN4AugBase):
         nn.init.kaiming_normal_(self.out.weight, a=0.1)
         self.out.bias.data.zero_()
 
-
     def activation_func(self):
         if self.activation_function == "ReLU":
             return nn.ReLU()
@@ -391,78 +368,6 @@ class UNerveV2(CNN4AugBase):
             return nn.ELU()
         else:
             raise ValueError("Activation function not implemented.")
-
-# class UNerveV1(CNN4AugBase):
-#     """
-#     Add skip layers should be added in this class. Add them for each up-sample block and add them to conv_layers.
-#     """
-#     def __init__(self,
-#                  lr: float = 1e-3,
-#                  optimizer: str = "adam",
-#                  loss_function: str = "cross_entropy",
-#                  activation_function: str = "ReLU",
-#                  dropout: float = 0.4):
-#         super().__init__(lr=lr, optimizer=optimizer, loss_function=loss_function)
-#         self.activation_function = activation_function
-#         self.dropout = dropout
-#         conv_layers = []
-
-#         # First Convolution Block with Relu and Batch Norm. Use Kaiming Initialization
-#         self.conv1 = nn.Conv2d(1, 32, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
-#         self.relu1 = self.activation_func()
-#         self.bn1 = nn.BatchNorm2d(32)
-#         self.drop1 = torch.nn.Dropout2d(p=self.dropout)
-#         nn.init.kaiming_normal_(self.conv1.weight, a=0.1)
-#         self.conv1.bias.data.zero_()
-#         conv_layers += [self.conv1, self.relu1, self.bn1, self.drop1]
-
-#         # Second Convolution Block
-#         self.conv2 = nn.Conv2d(32, 64, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2))
-#         self.relu2 = self.activation_func()
-#         self.bn2 = nn.BatchNorm2d(64)
-#         self.drop2 = torch.nn.Dropout2d(p=self.dropout)
-#         nn.init.kaiming_normal_(self.conv2.weight, a=0.1)
-#         self.conv2.bias.data.zero_()
-#         conv_layers += [self.conv2, self.relu2, self.bn2, self.drop2]
-
-#         # Third Convolution Block
-#         self.conv3 = nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-#         self.relu3 = self.activation_func()
-#         self.bn3 = nn.BatchNorm2d(128)
-#         self.drop3 = torch.nn.Dropout2d(p=self.dropout)
-#         nn.init.kaiming_normal_(self.conv3.weight, a=0.1)
-#         self.conv3.bias.data.zero_()
-#         conv_layers += [self.conv3, self.relu3, self.bn3, self.drop3]
-
-#         # Fourth Convolution Block
-#         self.conv4 = nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
-#         self.relu4 = self.activation_func()
-#         self.bn4 = nn.BatchNorm2d(256)
-#         self.drop4 = torch.nn.Dropout2d(p=self.dropout)
-#         nn.init.kaiming_normal_(self.conv4.weight, a=0.1)
-#         self.conv4.bias.data.zero_()
-#         conv_layers += [self.conv4, self.relu4,  self.bn4, self.drop4]
-
-#         # Linear Classifier
-#         self.ap = nn.AdaptiveAvgPool2d(output_size=1)
-#         self.lin = nn.Sequential(nn.Linear(in_features=256, out_features=200),
-#                                  nn.ReLU(),
-#                                  nn.Linear(in_features=200, out_features=128),
-#                                  nn.ReLU(),
-#                                  nn.Linear(in_features=128, out_features=5))
-        
-#         # Wrap the Convolutional Blocks
-#         self.conv = nn.Sequential(*conv_layers)
-
-#     def activation_func(self):
-#         if self.activation_function == "ReLU":
-#             return nn.ReLU()
-#         elif self.activation_function == "LeakyReLU":
-#             return nn.LeakyReLU()
-#         elif self.activation_function == "ELU":
-#             return nn.ELU()
-#         else:
-#             raise ValueError("Activation function not implemented.")
 
 
 if __name__ == "__main__":

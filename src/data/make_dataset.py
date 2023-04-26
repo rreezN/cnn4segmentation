@@ -13,7 +13,8 @@ from torchvision.transforms import CenterCrop
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
 @click.argument('output_filepath', type=click.Path())
-def main(input_filepath, output_filepath):
+@click.argument('crop_size', type=int)
+def main(input_filepath, output_filepath, crop_size):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
     """
@@ -21,9 +22,9 @@ def main(input_filepath, output_filepath):
     logger.info('making final data set from raw data')
     train_images = []
     train_labels = []
-    for i in range(24):
-        train_images += glob(f"{input_filepath}/train_images/train_{i}_*")
-        train_labels += glob(f"{input_filepath}/train_labels/labels_{i}_*")
+    for i in range(1, 25):
+        train_images += glob(f"{input_filepath}/train_images/train_{str(i).zfill(2)}_*")
+        train_labels += glob(f"{input_filepath}/train_labels/labels_{str(i).zfill(2)}_*")
 
     #                   TRAIN
     train_data = []
@@ -32,7 +33,7 @@ def main(input_filepath, output_filepath):
     for train_image, train_label in iterator:
         img = Image.open(train_image)
         label = Image.open(train_label)
-        label = CenterCrop(92)(label)
+        label = CenterCrop(crop_size)(label)
         train_data.append(np.array(img))
         train_labels_arr.append(np.array(label))
 
@@ -42,9 +43,9 @@ def main(input_filepath, output_filepath):
     #                   VALIDATION
     val_images = []
     val_labels = []
-    for i in range(24, 27):
-        val_images += glob(f"{input_filepath}/train_images/train_{i}_*")
-        val_labels += glob(f"{input_filepath}/train_labels/labels_{i}_*")
+    for i in range(25, 28):
+        val_images += glob(f"{input_filepath}/train_images/train_{str(i).zfill(2)}_*")
+        val_labels += glob(f"{input_filepath}/train_labels/labels_{str(i).zfill(2)}_*")
 
     val_data = []
     val_labels_arr = []
@@ -52,7 +53,7 @@ def main(input_filepath, output_filepath):
     for val_image, val_label in iterator:
         img = Image.open(val_image)
         label = Image.open(val_label)
-        label = CenterCrop(92)(label)
+        label = CenterCrop(crop_size)(label)
         val_data.append(np.array(img))
         val_labels_arr.append(np.array(label))
 
@@ -62,9 +63,9 @@ def main(input_filepath, output_filepath):
     #                   TEST
     test_images = []
     test_labels = []
-    for i in range(27, 30):
-        test_images += glob(f"{input_filepath}/train_images/train_{i}_*")
-        test_labels += glob(f"{input_filepath}/train_labels/labels_{i}_*")
+    for i in range(28, 31):
+        test_images += glob(f"{input_filepath}/train_images/train_{str(i).zfill(2)}_*")
+        test_labels += glob(f"{input_filepath}/train_labels/labels_{str(i).zfill(2)}_*")
 
     test_data = []
     test_labels_arr = []
@@ -72,7 +73,7 @@ def main(input_filepath, output_filepath):
     for test_image, test_label in iterator:
         img = Image.open(test_image)
         label = Image.open(test_label)
-        label = CenterCrop(92)(label)
+        label = CenterCrop(crop_size)(label)
         test_data.append(np.array(img))
         test_labels_arr.append(np.array(label))
 

@@ -24,8 +24,8 @@ def crop_into_16(train_path, label_path, index):
         sub_label.save(f"data/raw/132x132/train_labels/labels_{index}_{i + 1}.png")
 
 
-train_images = glob("data/raw/512x512/train_images/*")
-train_labels = glob("data/raw/512x512/train_labels/*")
+train_images = glob("data/raw/508x508/train_images/*")
+train_labels = glob("data/raw/508x508/train_labels/*")
 
 for j, (train_img, train_label) in enumerate(zip(train_images, train_labels)):
     crop_into_16(train_img, train_label, j)

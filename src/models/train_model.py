@@ -12,8 +12,8 @@ from typing import Dict, Any
 from pytorch_lightning.loggers import WandbLogger
 
 PARAMS = {
-    "model_name": "UNerveV2",
-    "project_name": "Dry-Bone-rrr",
+    "model_name": "UNerveV1",
+    "project_name": "Wet-Bone-rrr",
     "seed": 420,
     "n_channels": 1,
     "n_classes": 2,
@@ -21,20 +21,13 @@ PARAMS = {
     "patience": 30,
     "learning_rate": 1e-3,
     "dropout": 0.3,
-    "batch_dict": {0: 8,
-                   4: 16,
-                   8: 24,
-                   14: 32,
-                   20: 48,
-                   28: 64,
-                   36: 96,
-                   48: 128},
+    "batch_dict": {0: 4},
     "accelerator": "cuda" if torch.cuda.is_available() else "cpu",
-    "limit_train_batches": 1.0,
+    "limit_train_batches": 0.2,
     "optimizer": "adam",
     "loss_function": "cross_entropy",
     "activation_function": "ReLU",
-    "data_size": "132x132"
+    "data_size": "508x508"
 }
 
 random.seed(PARAMS["seed"])
@@ -43,7 +36,7 @@ np.random.seed(PARAMS["seed"])
 
 
 def train() -> None:
-    model = UNerveV2(PARAMS)
+    model = UNerveV1(PARAMS)
     checkpoint_callback = ModelCheckpoint(
         dirpath="./models/" + PARAMS["model_name"],
         monitor="val_loss",
@@ -73,7 +66,7 @@ def train() -> None:
         max_epochs=PARAMS["num_epochs"],
         limit_train_batches=PARAMS["limit_train_batches"],
         log_every_n_steps=1,
-        callbacks=[checkpoint_callback, early_stopping_callback, TQDMProgressBar(refresh_rate=500)],
+        callbacks=[checkpoint_callback, early_stopping_callback, TQDMProgressBar(refresh_rate=1)],
         reload_dataloaders_every_n_epochs=1,
         logger=wandb_logger
     )
