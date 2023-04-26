@@ -1,19 +1,25 @@
 import numpy as np
 import torch
-from model import TheAudioBotV3, TheAudioBotMini, TheAudioBotMiniV2
+import wandb
+
+from model import TheAudioBotV3, TheAudioBotMiniV2
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, TQDMProgressBar
 from dataloader import MyDataModule
-import getpass
-import wandb
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from typing import Tuple
 import random
-import yaml
-from typing import Dict, Any
 from pytorch_lightning.loggers import WandbLogger
 
 PARAMS = {
+<<<<<<< Updated upstream
+    "model_name": "TheAudioBotV3",
+    "project_name": "TeSt Of BeSt MoDel YeS V2",
+=======
     "model_name": "TheAudioBotMiniV2",
-    "project_name": "Mini-model investigation",
+    "project_name": "Test of best mini model",
+>>>>>>> Stashed changes
     "seed": 11,
     "num_epochs": 150,
     "patience": 30,
@@ -27,9 +33,16 @@ PARAMS = {
                    48: 128},
     "accelerator": "gpu" if torch.cuda.is_available() else "cpu",
     "limit_train_batches": 1.0,
+    "learning_rate": 0.0021,
     "optimizer": "adam",
     "loss_function": "cross_entropy",
-    "activation_function": "LeakyReLU"
+<<<<<<< Updated upstream
+    "activation_function": "ReLU",
+    "dropout": 0.08
+=======
+    "activation_function": "LeakyReLU",
+    "dropout": 0.026
+>>>>>>> Stashed changes
 }
 
 random.seed(PARAMS["seed"])
@@ -37,12 +50,12 @@ torch.manual_seed(PARAMS["seed"])
 np.random.seed(PARAMS["seed"])
 
 
-def train(hparams: Dict[str, Any]) -> None:
-    model = TheAudioBotMiniV2(lr=hparams["learning_rate"],
+def train(data_loader) -> None:
+    model = TheAudioBotMiniV2(lr=PARAMS["learning_rate"],
                           optimizer=PARAMS["optimizer"],
                           loss_function=PARAMS["loss_function"],
                           activation_function=PARAMS["activation_function"],
-                          dropout=hparams["dropout"])
+                          dropout=PARAMS["dropout"])
 
     checkpoint_callback = ModelCheckpoint(
         dirpath="./models/" + PARAMS["model_name"],
@@ -72,37 +85,45 @@ def train(hparams: Dict[str, Any]) -> None:
         accelerator=PARAMS["accelerator"],
         max_epochs=PARAMS["num_epochs"],
         limit_train_batches=PARAMS["limit_train_batches"],
-        log_every_n_steps=1,
+        log_every_n_steps=500,
         callbacks=[checkpoint_callback, early_stopping_callback, TQDMProgressBar(refresh_rate=500)],
         reload_dataloaders_every_n_epochs=1,
         logger=wandb_logger
     )
 
-    data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"], device=PARAMS["accelerator"])
-
     trainer.fit(model, datamodule=data_loader)
     trainer.test(model, datamodule=data_loader)
+    wandb.finish()
 
 
-def train_sweep() -> None:
-    with open('./sweep.yaml') as file:
-        sweep_config = yaml.load(file, Loader=yaml.FullLoader)
+def validate(n_folds: int = 10) -> None:
+    # Load data
+    data = np.load("data/raw/training.npy")
+    labels = np.load("data/raw/training_labels.npy")
 
-    sweep_id = wandb.sweep(sweep=sweep_config, project=PARAMS["project_name"], entity="audiobots")
+    train_data_temp, test_data, train_labels_temp, test_labels = train_test_split(data, labels, test_size=0.1,
+                                                                                  random_state=PARAMS["seed"], shuffle=True)
 
-    def sweep_run() -> None:
-        with wandb.init() as run:
-            hparams = {**run.config}  # **DEFAULT_PARAMS,
-            train(hparams)
+    kf = KFold(n_splits=n_folds)
 
-    wandb.agent(sweep_id=sweep_id, function=sweep_run, count=None)
+    for i, (train_index, test_index) in enumerate(kf.split(train_data_temp)):
+        train_data = train_data_temp[train_index]
+        train_labels = train_labels_temp[train_index]
+        val_data = train_data_temp[test_index]
+        val_labels = train_labels_temp[test_index]
+
+        data_loader = MyDataModule(
+            batch_dict=PARAMS["batch_dict"],
+            device=PARAMS["accelerator"],
+            train_data=train_data,
+            train_labels=train_labels,
+            val_data=val_data,
+            val_labels=val_labels,
+            test_data=test_data,
+            test_labels=test_labels
+        )
+        train(data_loader)
 
 
 if __name__ == "__main__":
-    train_sweep()
-    # hparams = {"learning_rate": 1e-3,
-    #            "optimizer": "adam",
-    #            "loss_function": "cross_entropy",
-    #            "activation_function": "ReLU",
-    #            "dropout": 0.3}
-    # train(hparams)
+    validate(10)
