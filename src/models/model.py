@@ -144,8 +144,9 @@ class CNN4AugBase(LightningModule):
         # acc = torch.sum(pred == y).item() / (len(y) * 1.0)
         # self.log('val_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         # return acc
-        self.x_to_plot = x[0]
-        self.y_to_plot = y[0]
+        idx = random.choice(range(len(x)))
+        self.x_to_plot = x[idx]
+        self.y_to_plot = y[idx]
         return {"val_loss": loss}
 
     def on_validation_epoch_end(self):
@@ -164,16 +165,14 @@ class CNN4AugBase(LightningModule):
         #     )
         # wandb.log({"Predictions": image_array, "Labels": label_array"})
 
-        # TODO: Det her virker, men tror Actual image med overlay er wrong... føler ikke det rigtige billede afspejler segmentation (se wandb).
-        # TODO: Det er også lidt svært at se hvad der er hvad, så måske skal vi lave en anden måde at vise det på -> måske nogle andre cmaps el.lign.
-        fig, ax = plt.subplots(1,3)
+        fig, ax = plt.subplots(1, 3)
         fig.suptitle(f"Epoch: {self.trainer.current_epoch}", fontsize=16)
         ax[0].imshow(label_array)
         ax[0].set_title('Label')
         ax[1].imshow(image_array)
         ax[1].set_title('Prediction')
-        ax[2].imshow(self.x_to_plot.view(132, 132).detach().cpu().numpy(), cmap='gray')
-        ax[2].imshow(image_array, cmap="jet", alpha=0.5)
+        ax[2].imshow(torchvision.transforms.CenterCrop(92)(self.x_to_plot[0].detach().cpu()).numpy(), cmap='gray')
+        ax[2].imshow(image_array, cmap="summer", alpha=0.2)
         ax[2].set_title('Actual Image\n with\n prediction overlay')
         plt.tight_layout()
         
