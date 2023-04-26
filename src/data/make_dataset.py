@@ -22,8 +22,8 @@ def main(input_filepath, output_filepath):
     train_images = []
     train_labels = []
     for i in range(24):
-        train_images += glob(f"{input_filepath}train_images/train_{i}_*")
-        train_labels += glob(f"{input_filepath}train_labels/labels_{i}_*")
+        train_images += glob(f"{input_filepath}/train_images/train_{i}_*")
+        train_labels += glob(f"{input_filepath}/train_labels/labels_{i}_*")
 
     #                   TRAIN
     train_data = []
