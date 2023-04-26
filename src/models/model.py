@@ -1,4 +1,5 @@
 import torch.nn.functional as F
+import wandb
 from pytorch_lightning import LightningModule
 from torchsummary import summary
 import torch.nn as nn
@@ -69,6 +70,8 @@ class CNN4AugBase(LightningModule):
         self.optimizer_type = optimizer
         self.loss_function = loss_function
         self.modelname= modelname
+        self.x_to_plot = None
+        self.y_to_plot = None
 
     def forward(self, x):
         if self.modelname == 'UNerveV1':
@@ -141,12 +144,19 @@ class CNN4AugBase(LightningModule):
         # acc = torch.sum(pred == y).item() / (len(y) * 1.0)
         # self.log('val_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
         # return acc
+        self.x_to_plot = x[0]
+        self.y_to_plot = y[0]
         return {"val_loss": loss}
 
-    def validation_end(self, outputs):
-        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        self.log('avg_loss', avg_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return {"avg_val_loss": avg_loss}
+    def on_validation_epoch_end(self):
+        y_hat = self.forward(self.x_to_plot.view(1, 1, 132, 132))
+        image = y_hat[0][1].detach().cpu().numpy()
+        label = self.y_to_plot[1].detach().cpu().numpy()
+        wandb.log({"image": [wandb.Image(image, caption="Image")]})
+        wandb.log({"label": [wandb.Image(label, caption="Label")]})
+        # avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        # self.log('avg_loss', avg_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        # return {"avg_val_loss": avg_loss}
 
     # def on_validation_epoch_end(self):
     #     # check if the validation accuracy exceeds your threshold
@@ -303,22 +313,22 @@ class UNerveV2(CNN4AugBase):
         self.n_classes = PARAMS["n_classes"]
         
         # Encoder
-        self.conv1_1 = nn.Conv2d(1, 64, 3)
-        self.conv1_2 = nn.Conv2d(64, 64, 3)
+        self.conv1_1 = nn.Conv2d(1, 8, 3)
+        self.conv1_2 = nn.Conv2d(8, 8, 3)
         nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
         self.conv1_1.bias.data.zero_()
         self.conv1_2.bias.data.zero_()
         
-        self.conv2_1 = nn.Conv2d(64, 128, 3)
-        self.conv2_2 = nn.Conv2d(128, 128, 3)
+        self.conv2_1 = nn.Conv2d(8, 16, 3)
+        self.conv2_2 = nn.Conv2d(16, 16, 3)
         nn.init.kaiming_normal_(self.conv2_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv2_2.weight, a=0.1)
         self.conv2_1.bias.data.zero_()
         self.conv2_2.bias.data.zero_()
 
-        self.conv3_1 = nn.Conv2d(128, 256, 3)
-        self.conv3_2 = nn.Conv2d(256, 256, 3)
+        self.conv3_1 = nn.Conv2d(16, 32, 3)
+        self.conv3_2 = nn.Conv2d(32, 32, 3)
         nn.init.kaiming_normal_(self.conv3_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv3_2.weight, a=0.1)
         self.conv3_1.bias.data.zero_()
@@ -327,24 +337,24 @@ class UNerveV2(CNN4AugBase):
         self.pool = nn.MaxPool2d(2, 2)
 
         # Decoder
-        self.upconv1 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.conv4_1 = nn.Conv2d(256, 128, 3)
-        self.conv4_2 = nn.Conv2d(128, 128, 3)
+        self.upconv1 = nn.ConvTranspose2d(32, 16, 2, stride=2)
+        self.conv4_1 = nn.Conv2d(32, 16, 3)
+        self.conv4_2 = nn.Conv2d(16, 16, 3)
         nn.init.kaiming_normal_(self.conv4_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv4_2.weight, a=0.1)
         self.conv4_1.bias.data.zero_()
         self.conv4_2.bias.data.zero_()
 
-        self.upconv2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.conv5_1 = nn.Conv2d(128, 64, 3)
-        self.conv5_2 = nn.Conv2d(64, 64, 3)
+        self.upconv2 = nn.ConvTranspose2d(16, 8, 2, stride=2)
+        self.conv5_1 = nn.Conv2d(16, 8, 3)
+        self.conv5_2 = nn.Conv2d(8, 8, 3)
         nn.init.kaiming_normal_(self.conv5_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv5_2.weight, a=0.1)
         self.conv5_1.bias.data.zero_()
         self.conv5_2.bias.data.zero_()
 
         # Output
-        self.out = nn.Conv2d(64, self.n_classes, kernel_size=1)
+        self.out = nn.Conv2d(8, self.n_classes, kernel_size=1)
         nn.init.kaiming_normal_(self.out.weight, a=0.1)
         self.out.bias.data.zero_()
 

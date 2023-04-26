@@ -19,7 +19,7 @@ PARAMS = {
     "n_classes": 2,
     "num_epochs": 150,
     "patience": 30,
-    "learning_rate": 5e-4,
+    "learning_rate": 1e-3,
     "dropout": 0.3,
     "batch_dict": {0: 8,
                    4: 16,
