@@ -1,63 +1,55 @@
 import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 from torchsummary import summary
-# from focal_loss import FocalLoss
 import torch.nn as nn
 import torch
 import random
 import torchaudio
 import torchprofile
 import torchvision
-
-# # Load the model
-# focal_loss = FocalLoss(
-#     alpha=torch.tensor([.73, .48, .91, .92, .97]),
-#     gamma=2,
-#     reduction='mean'
-# )
-
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# focal_loss = focal_loss.to(device)
+from PIL import Image
+import torchvision.transforms as T
 
 
-class SpectrogramAugmentation(LightningModule):
-    def __init__(self, p_time_shift=0.2, p_freq_shift=0.2, p_time_stretch=0.2, p_noise=0.2):
+class NerveAugmentation(LightningModule):
+    def __init__(self, p_blur=0.2, p_sharpen=0.2, p_noise=0.2):
         super().__init__()
-        self.p_time_shift = p_time_shift
-        self.p_freq_shift = p_freq_shift
-        self.p_time_stretch = p_time_stretch
+        self.p_blur = p_blur
+        self.p_sharpen = p_sharpen
         self.p_noise = p_noise
 
     def forward(self, x):
-        probs = [random.random() for _ in range(4)]
-        if probs[0] < self.p_time_shift:
-            x = self.time_shift(x)
-        if probs[1] < self.p_freq_shift:
-            x = self.freq_shift(x)
-        if probs[2] < self.p_time_stretch:
-            x = self.time_stretch(x)
-        if probs[3] < self.p_noise:
+        probs = [random.random() for _ in range(3)]
+        if probs[0] < self.p_blur:
+            x = self.blur(x)
+        if probs[1] < self.p_sharpen and probs[0] >= self.p_blur:
+            x = self.sharpen(x)
+        if probs[2] < self.p_noise:
             x = self.add_noise(x)
         x = x.to(device)
         return x
 
-    def time_shift(self, x):
-        shift = random.randint(-x.shape[-1] // 10, x.shape[-1] // 10)
-        return torch.roll(x, shifts=shift, dims=-1)
+    @staticmethod
+    def blur(x):
+        """
+        Function that applies a Gaussian blur to the input image
+        :param x:
+        :return:
+        """
+        blurrer = T.GaussianBlur(kernel_size=(9, 9), sigma=(0.1, 2))
+        return blurrer(x)
 
-    def freq_shift(self, x):
-        shift = random.randint(-x.shape[-2] // 10, x.shape[-2] // 10)
-        return torch.roll(x, shifts=shift, dims=-2)
-        
-    def time_stretch(self, x):
-        stretch_factor = random.uniform(0.8, 1.2)
-        orig_device = x.device
-        x = x.unsqueeze(0).cpu()
-        x = torchaudio.transforms.TimeStretch(hop_length=None, n_freq=x.shape[-2], fixed_rate=stretch_factor)(x).float()
-        x = x.squeeze(0).to(orig_device)
-        return x
+    @staticmethod
+    def sharpen(x):
+        """
+        Function that applies a sharpening filter to the input image
+        :param x:
+        :return:
+        """
+        return T.functional.adjust_sharpness(x, sharpness_factor=random.uniform(1.5, 2))
 
-    def add_noise(self, x):
+    @staticmethod
+    def add_noise(x):
         noise_factor = random.uniform(0.01, 0.1)
         noise = torch.randn_like(x) * noise_factor
         return x + noise
