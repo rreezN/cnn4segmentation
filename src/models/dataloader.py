@@ -69,7 +69,7 @@ class MyDataModule(pl.LightningDataModule):
         val_labels = np.load(f"data/processed/{self.data_size}/val_labels.npy") if self.init_val_data is None else self.init_val_labels
 
         val_data = torch.unsqueeze(torch.tensor(val_data, dtype=torch.float32), 1)
-        val_labels = torch.tensor(val_labels).long()
+        val_labels = torch.tensor(val_labels != 255).long()
         val_data = standardiseTransform(val_data, mu, std)
         self.val_data = dataset(val_data, val_labels.long())
 
@@ -78,7 +78,7 @@ class MyDataModule(pl.LightningDataModule):
         test_labels = np.load(f"data/processed/{self.data_size}/test_labels.npy") if self.init_test_data is None else self.init_test_labels
 
         test_data = torch.unsqueeze(torch.tensor(test_data, dtype=torch.float32), 1)
-        test_labels = torch.tensor(test_labels).long()
+        test_labels = torch.tensor(test_labels != 255).long()
         test_data = standardiseTransform(test_data, mu, std)
         self.test_data = dataset(test_data, test_labels.long())
 

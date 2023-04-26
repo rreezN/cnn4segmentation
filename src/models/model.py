@@ -70,46 +70,68 @@ class CNN4AugBase(LightningModule):
     def __init__(self,
                  lr: float = 1e-3,
                  optimizer: str = "adam",
-                 loss_function: str = "cross_entropy"):
+                 loss_function: str = "cross_entropy",
+                 modelname: str = 'UNerveV1'):
         super().__init__()
         self.save_hyperparameters()
         self.lr = lr
         self.optimizer_type = optimizer
         self.loss_function = loss_function
+        self.modelname= modelname
 
     def forward(self, x):
-        # Encoder
-        x1 = torch.relu(self.conv1_2(torch.relu(self.conv1_1(x))))
-        x2 = torch.relu(self.conv2_2(torch.relu(self.conv2_1(self.pool(x1)))))
-        x3 = torch.relu(self.conv3_2(torch.relu(self.conv3_1(self.pool(x2)))))
-        x4 = torch.relu(self.conv4_2(torch.relu(self.conv4_1(self.pool(x3)))))
-        x5 = torch.relu(self.conv5_2(torch.relu(self.conv5_1(self.pool(x4)))))
+        if self.modelname == 'UNerveV1':
+            # Encoder
+            x1 = torch.relu(self.conv1_2(torch.relu(self.conv1_1(x))))
+            x2 = torch.relu(self.conv2_2(torch.relu(self.conv2_1(self.pool(x1)))))
+            x3 = torch.relu(self.conv3_2(torch.relu(self.conv3_1(self.pool(x2)))))
+            x4 = torch.relu(self.conv4_2(torch.relu(self.conv4_1(self.pool(x3)))))
+            x5 = torch.relu(self.conv5_2(torch.relu(self.conv5_1(self.pool(x4)))))
 
-        # Decoder
-        x6 = torch.relu(self.upconv1(x5))
-        x4_ = torchvision.transforms.Resize(x6.shape[-2:], antialias=True)(x4)
-        x6 = torch.cat((x4_, x6), dim=1)
-        x6 = torch.relu(self.conv6_2(torch.relu(self.conv6_1(x6))))
+            # Decoder
+            x6 = torch.relu(self.upconv1(x5))
+            x4_ = torchvision.transforms.Resize(x6.shape[-2:], antialias=True)(x4)
+            x6 = torch.cat((x4_, x6), dim=1)
+            x6 = torch.relu(self.conv6_2(torch.relu(self.conv6_1(x6))))
 
-        x7 = torch.relu(self.upconv2(x6))
-        x3_ = torchvision.transforms.Resize(x7.shape[-2:], antialias=True)(x3)
-        x7 = torch.cat((x3_, x7), dim=1)
-        x7 = torch.relu(self.conv7_2(torch.relu(self.conv7_1(x7))))
+            x7 = torch.relu(self.upconv2(x6))
+            x3_ = torchvision.transforms.Resize(x7.shape[-2:], antialias=True)(x3)
+            x7 = torch.cat((x3_, x7), dim=1)
+            x7 = torch.relu(self.conv7_2(torch.relu(self.conv7_1(x7))))
 
-        x8 = torch.relu(self.upconv3(x7))
-        x2_ = torchvision.transforms.Resize(x8.shape[-2:], antialias=True)(x2)
-        x8 = torch.cat((x2_, x8), dim=1)
-        x8 = torch.relu(self.conv8_2(torch.relu(self.conv8_1(x8))))
+            x8 = torch.relu(self.upconv3(x7))
+            x2_ = torchvision.transforms.Resize(x8.shape[-2:], antialias=True)(x2)
+            x8 = torch.cat((x2_, x8), dim=1)
+            x8 = torch.relu(self.conv8_2(torch.relu(self.conv8_1(x8))))
 
-        x9 = torch.relu(self.upconv4(x8))
-        x1_ = torchvision.transforms.Resize(x9.shape[-2:], antialias=True)(x1)
-        x9 = torch.cat((x1_, x9), dim=1)
-        x9 = torch.relu(self.conv9_2(torch.relu(self.conv9_1(x9))))
+            x9 = torch.relu(self.upconv4(x8))
+            x1_ = torchvision.transforms.Resize(x9.shape[-2:], antialias=True)(x1)
+            x9 = torch.cat((x1_, x9), dim=1)
+            x9 = torch.relu(self.conv9_2(torch.relu(self.conv9_1(x9))))
 
-        # Output
-        out = self.out(x9)
-        return out
+            # Output
+            out = self.out(x9)
+            return out
+        
+        elif self.modelname == 'UNerveV2':
+            x1 = torch.relu(self.conv1_2(torch.relu(self.conv1_1(x))))
+            x2 = torch.relu(self.conv2_2(torch.relu(self.conv2_1(self.pool(x1)))))
+            x3 = torch.relu(self.conv3_2(torch.relu(self.conv3_1(self.pool(x2)))))
 
+            x4 = torch.relu(self.upconv1(x3))
+            x2_ = torchvision.transforms.CenterCrop(x4.shape[-1])(x2)
+            x4 = torch.cat((x2_, x4), dim=1)
+            x4 = torch.relu(self.conv4_2(torch.relu(self.conv4_1(x4))))
+
+            x5 = torch.relu(self.upconv2(x4))
+            x1_ = torchvision.transforms.CenterCrop(x5.shape[-1])(x1)
+            x5 = torch.cat((x1_, x5), dim=1)
+            x5 = torch.relu(self.conv5_2(torch.relu(self.conv5_1(x5))))
+            
+            out = torch.softmax(self.out(x5), dim=1)
+            
+            return out
+        
     def training_step(self, batch, batch_idx):
         x, y = batch
         # augmentation = SpectrogramAugmentation()
@@ -124,28 +146,35 @@ class CNN4AugBase(LightningModule):
         y_hat = self.forward(x)
         loss = self.loss_func(y_hat, y)
         self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        pred = torch.argmax(y_hat, dim=1)
-        acc = torch.sum(pred == y).item() / (len(y) * 1.0)
-        self.log('val_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return acc
-    
-    def on_validation_epoch_end(self):
-        # check if the validation accuracy exceeds your threshold
-        if self.trainer.current_epoch >= 20 and self.trainer.logged_metrics['val_acc'] < 0.80:
-            # if the accuracy is below 0.9 after 5 epochs, stop the training early
-            self.log('early_stop', True)
-            self.logger.experiment.finish()
-            self.trainer.should_stop = True
+        # pred = torch.argmax(y_hat, dim=1)
+        # acc = torch.sum(pred == y).item() / (len(y) * 1.0)
+        # self.log('val_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        # return acc
+        return {"val_loss": loss}
+
+    def validation_end(self, outputs):
+        avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
+        self.log('avg_loss', avg_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        return {"avg_val_loss": avg_loss}
+
+    # def on_validation_epoch_end(self):
+    #     # check if the validation accuracy exceeds your threshold
+    #     pass
+    #     # if self.trainer.current_epoch >= 20 and self.trainer.logged_metrics['val_acc'] < 0.80:
+    #     #     # if the accuracy is below 0.9 after 5 epochs, stop the training early
+    #     #     self.log('early_stop', True)
+    #     #     self.logger.experiment.finish()
+    #     #     self.trainer.should_stop = True
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = self.loss_func(y_hat, y)
         self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        pred = torch.argmax(y_hat, dim=1)
-        acc = torch.sum(pred == y).item() / (len(y) * 1.0)
-        self.log('test_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        return acc
+        # pred = torch.argmax(y_hat, dim=1)
+        # acc = torch.sum(pred == y).item() / (len(y) * 1.0)
+        # self.log('test_acc', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        # return acc
 
     def configure_optimizers(self):
         if self.optimizer_type == 'adam':
@@ -167,13 +196,14 @@ class CNN4AugBase(LightningModule):
         #     return focal_loss(y_hat, y)
         else:
             raise ValueError("Loss function not implemented.")
+    
 
 class UNerveV1(CNN4AugBase):
     """
     Add skip layers should be added in this class. Add them for each up-sample block and add them to conv_layers.
     """
     def __init__(self, PARAMS):
-        super().__init__(lr=PARAMS["learning_rate"], optimizer=PARAMS["optimizer"], loss_function=PARAMS["loss_function"])
+        super().__init__(lr=PARAMS["learning_rate"], optimizer=PARAMS["optimizer"], loss_function=PARAMS["loss_function"], modelname=PARAMS['model_name'])
         self.learning_rate = PARAMS["learning_rate"]
         self.activation_function = PARAMS["activation_function"]
         self.dropout = PARAMS["dropout"]
@@ -269,7 +299,74 @@ class UNerveV1(CNN4AugBase):
             raise ValueError("Activation function not implemented.")
 
 
+class UNerveV2(CNN4AugBase):
+    """
+    Add skip layers should be added in this class. Add them for each up-sample block and add them to conv_layers.
+    """
+    def __init__(self, PARAMS):
+        super().__init__(lr=PARAMS["learning_rate"], optimizer=PARAMS["optimizer"], loss_function=PARAMS["loss_function"], modelname=PARAMS['model_name'])
+        self.learning_rate = PARAMS["learning_rate"]
+        self.activation_function = PARAMS["activation_function"]
+        self.dropout = PARAMS["dropout"]
+        self.n_channels = PARAMS["n_channels"]
+        self.n_classes = PARAMS["n_classes"]
+        
+        # Encoder
+        self.conv1_1 = nn.Conv2d(1, 64, 3)
+        self.conv1_2 = nn.Conv2d(64, 64, 3)
+        nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
+        nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
+        self.conv1_1.bias.data.zero_()
+        self.conv1_2.bias.data.zero_()
+        
+        self.conv2_1 = nn.Conv2d(64, 128, 3)
+        self.conv2_2 = nn.Conv2d(128, 128, 3)
+        nn.init.kaiming_normal_(self.conv2_1.weight, a=0.1)
+        nn.init.kaiming_normal_(self.conv2_2.weight, a=0.1)
+        self.conv2_1.bias.data.zero_()
+        self.conv2_2.bias.data.zero_()
 
+        self.conv3_1 = nn.Conv2d(128, 256, 3)
+        self.conv3_2 = nn.Conv2d(256, 256, 3)
+        nn.init.kaiming_normal_(self.conv3_1.weight, a=0.1)
+        nn.init.kaiming_normal_(self.conv3_2.weight, a=0.1)
+        self.conv3_1.bias.data.zero_()
+        self.conv3_2.bias.data.zero_()
+
+        self.pool = nn.MaxPool2d(2, 2)
+
+        # Decoder
+        self.upconv1 = nn.ConvTranspose2d(256, 128, 2, stride=2)
+        self.conv4_1 = nn.Conv2d(256, 128, 3)
+        self.conv4_2 = nn.Conv2d(128, 128, 3)
+        nn.init.kaiming_normal_(self.conv4_1.weight, a=0.1)
+        nn.init.kaiming_normal_(self.conv4_2.weight, a=0.1)
+        self.conv4_1.bias.data.zero_()
+        self.conv4_2.bias.data.zero_()
+
+        self.upconv2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.conv5_1 = nn.Conv2d(128, 64, 3)
+        self.conv5_2 = nn.Conv2d(64, 64, 3)
+        nn.init.kaiming_normal_(self.conv5_1.weight, a=0.1)
+        nn.init.kaiming_normal_(self.conv5_2.weight, a=0.1)
+        self.conv5_1.bias.data.zero_()
+        self.conv5_2.bias.data.zero_()
+
+        # Output
+        self.out = nn.Conv2d(64, self.n_classes, kernel_size=1)
+        nn.init.kaiming_normal_(self.out.weight, a=0.1)
+        self.out.bias.data.zero_()
+
+
+    def activation_func(self):
+        if self.activation_function == "ReLU":
+            return nn.ReLU()
+        elif self.activation_function == "LeakyReLU":
+            return nn.LeakyReLU()
+        elif self.activation_function == "ELU":
+            return nn.ELU()
+        else:
+            raise ValueError("Activation function not implemented.")
 
 # class UNerveV1(CNN4AugBase):
 #     """

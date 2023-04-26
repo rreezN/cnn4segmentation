@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from model import UNerveV1
+from model import UNerveV1, UNerveV2
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, TQDMProgressBar
 from dataloader import MyDataModule
@@ -12,7 +12,7 @@ from typing import Dict, Any
 from pytorch_lightning.loggers import WandbLogger
 
 PARAMS = {
-    "model_name": "UNerveV1",
+    "model_name": "UNerveV2",
     "project_name": "Model Investigation",
     "seed": 11,
     "n_channels": 1,
@@ -21,7 +21,7 @@ PARAMS = {
     "patience": 30,
     "learning_rate": 1e-3,
     "dropout": 0.3,
-    "batch_dict": {0: 1,
+    "batch_dict": {0: 8,
                    4: 16,
                    8: 24,
                    14: 32,
@@ -29,8 +29,8 @@ PARAMS = {
                    28: 64,
                    36: 96,
                    48: 128},
-    "accelerator": "gpu" if torch.cuda.is_available() else "cpu",
-    "limit_train_batches": 1.0,
+    "accelerator": "cpu",
+    "limit_train_batches": 1,
     "optimizer": "adam",
     "loss_function": "cross_entropy",
     "activation_function": "ReLU",
@@ -43,7 +43,7 @@ np.random.seed(PARAMS["seed"])
 
 
 def train() -> None:
-    model = UNerveV1(PARAMS)
+    model = UNerveV2(PARAMS)
     checkpoint_callback = ModelCheckpoint(
         dirpath="./models/" + PARAMS["model_name"],
         monitor="val_loss",
