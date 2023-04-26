@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from model import TheAudioBotV3, TheAudioBotMini, TheAudioBotMiniV2
+from model import UNerveV1
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, TQDMProgressBar
 from dataloader import MyDataModule
@@ -12,12 +12,16 @@ from typing import Dict, Any
 from pytorch_lightning.loggers import WandbLogger
 
 PARAMS = {
-    "model_name": "TheAudioBotMiniV2",
-    "project_name": "Mini-model investigation",
+    "model_name": "UNerveV1",
+    "project_name": "Model Investigation",
     "seed": 11,
+    "n_channels": 1,
+    "n_classes": 2,
     "num_epochs": 150,
     "patience": 30,
-    "batch_dict": {0: 8,
+    "learning_rate": 1e-3,
+    "dropout": 0.3,
+    "batch_dict": {0: 1,
                    4: 16,
                    8: 24,
                    14: 32,
@@ -29,7 +33,8 @@ PARAMS = {
     "limit_train_batches": 1.0,
     "optimizer": "adam",
     "loss_function": "cross_entropy",
-    "activation_function": "LeakyReLU"
+    "activation_function": "ReLU",
+    "data_size": "132x132"
 }
 
 random.seed(PARAMS["seed"])
@@ -37,13 +42,8 @@ torch.manual_seed(PARAMS["seed"])
 np.random.seed(PARAMS["seed"])
 
 
-def train(hparams: Dict[str, Any]) -> None:
-    model = TheAudioBotMiniV2(lr=hparams["learning_rate"],
-                          optimizer=PARAMS["optimizer"],
-                          loss_function=PARAMS["loss_function"],
-                          activation_function=PARAMS["activation_function"],
-                          dropout=hparams["dropout"])
-
+def train() -> None:
+    model = UNerveV1(PARAMS)
     checkpoint_callback = ModelCheckpoint(
         dirpath="./models/" + PARAMS["model_name"],
         monitor="val_loss",
@@ -58,7 +58,7 @@ def train(hparams: Dict[str, Any]) -> None:
     )
 
     wandb_logger = WandbLogger(
-        project=PARAMS["project_name"], entity="audiobots", log_model="all"
+        project=PARAMS["project_name"], entity="nerve-poster", log_model="all"
     )
 
     for key, val in PARAMS.items():
@@ -78,7 +78,9 @@ def train(hparams: Dict[str, Any]) -> None:
         logger=wandb_logger
     )
 
-    data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"], device=PARAMS["accelerator"], data_size="132x132")
+    data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"],
+                               device=PARAMS["accelerator"],
+                               data_size=PARAMS["data_size"])
 
     trainer.fit(model, datamodule=data_loader)
     trainer.test(model, datamodule=data_loader)
@@ -99,10 +101,11 @@ def train_sweep() -> None:
 
 
 if __name__ == "__main__":
-    train_sweep()
+    # train_sweep()
     # hparams = {"learning_rate": 1e-3,
     #            "optimizer": "adam",
     #            "loss_function": "cross_entropy",
     #            "activation_function": "ReLU",
     #            "dropout": 0.3}
     # train(hparams)
+    train()
