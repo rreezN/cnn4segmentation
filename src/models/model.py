@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch
 import random
 import torchaudio
-import torchprofile
 import torchvision
 from PIL import Image
 import torchvision.transforms as T
@@ -443,7 +442,3 @@ if __name__ == "__main__":
     print("Model Summary")
     summary(myModel, (1, 32, 96))
     inputs = torch.randn(1, 1, 32, 96)
-
-    # Check the number of MACs
-    macs = torchprofile.profile_macs(myModel, inputs)
-    print(f"GMACs: {macs/1e6}")

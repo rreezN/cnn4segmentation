@@ -71,7 +71,7 @@ class MyDataModule(pl.LightningDataModule):
         val_data = torch.unsqueeze(torch.tensor(val_data, dtype=torch.float32), 1)
         val_labels = torch.tensor(val_labels != 255).long()
         val_data = standardiseTransform(val_data, mu, std)
-        self.val_data = dataset(val_data, val_labels.long())
+        self.val_data = dataset(val_data, val_labels)
 
         # Standardise test data
         test_data = np.load(f"data/processed/{self.data_size}/test_data.npy") if self.init_test_data is None else self.init_test_data
@@ -80,7 +80,7 @@ class MyDataModule(pl.LightningDataModule):
         test_data = torch.unsqueeze(torch.tensor(test_data, dtype=torch.float32), 1)
         test_labels = torch.tensor(test_labels != 255).long()
         test_data = standardiseTransform(test_data, mu, std)
-        self.test_data = dataset(test_data, test_labels.long())
+        self.test_data = dataset(test_data, test_labels)
 
     def train_dataloader(self):
         # Update current_batch_size based on epoch number
@@ -97,7 +97,7 @@ class MyDataModule(pl.LightningDataModule):
         return DataLoader(self.test_data, batch_size=self.current_batch_size, num_workers=1, shuffle=False)
 
     # def getWeightMap(self, x, y):
-    #     _, mask_matrix = readData(x, y, H=132, W=132)
+    #     _, mask_matrix = readData(x, y, H=132x132, W=132x132)
     #     weights = torch.zeros_like(mask_matrix)
     #     for im in range(len(batch)):
     #         weights[im] = weight_map(mask_matrix[im], 10, 5, background_class=0)
