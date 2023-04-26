@@ -78,7 +78,7 @@ def train(hparams: Dict[str, Any]) -> None:
         logger=wandb_logger
     )
 
-    data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"], device=PARAMS["accelerator"])
+    data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"], device=PARAMS["accelerator"], data_size="132x132")
 
     trainer.fit(model, datamodule=data_loader)
     trainer.test(model, datamodule=data_loader)
