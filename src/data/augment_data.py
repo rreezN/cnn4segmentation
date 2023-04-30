@@ -159,8 +159,8 @@ def main(input_filepath, output_filepath):
         label = Image.open(train_label)
 
         # Get names
-        img_name = train_img.split('\\')[-1].split('.')[0]
-        label_name = train_label.split('\\')[-1].split('.')[0]
+        img_name = train_img.split('/')[-1].split('.')[0]
+        label_name = train_label.split('/')[-1].split('.')[0]
 
         # Augment
         for j in range(100):

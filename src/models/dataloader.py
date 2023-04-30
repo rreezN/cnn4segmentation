@@ -7,6 +7,7 @@ import numpy as np
 def standardiseTransform(data, mean, std):
     # Standardise data
     return (data - mean) / std
+    # return data * 2.0 / 255 - 1.0
 
 
 class dataset(Dataset):
