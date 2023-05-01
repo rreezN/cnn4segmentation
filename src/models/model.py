@@ -243,70 +243,69 @@ class UNerveV1(CNN4AugBase):
         self.dropout1 = torch.nn.Dropout2d(p=PARAMS["dropout"])
         self.n_channels = PARAMS["n_channels"]
         self.n_classes = PARAMS["n_classes"]
-        
+
         # Encoder
-        self.conv1_1 = nn.Conv2d(1, 32, 3)
-        self.conv1_2 = nn.Conv2d(32, 32, 3)
+        self.conv1_1 = nn.Conv2d(1, 8, 3)
+        self.conv1_2 = nn.Conv2d(8, 8, 3)
         nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv1_1.weight, a=0.1)
         self.conv1_1.bias.data.zero_()
         self.conv1_2.bias.data.zero_()
-        self.bn1 = nn.BatchNorm2d(32)
-        
+        self.bn1 = nn.BatchNorm2d(8)
 
-        self.conv2_1 = nn.Conv2d(32, 64, 3)
-        self.conv2_2 = nn.Conv2d(64, 64, 3)
+        self.conv2_1 = nn.Conv2d(8, 16, 3)
+        self.conv2_2 = nn.Conv2d(16, 16, 3)
         nn.init.kaiming_normal_(self.conv2_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv2_2.weight, a=0.1)
         self.conv2_1.bias.data.zero_()
         self.conv2_2.bias.data.zero_()
-        self.bn2 = nn.BatchNorm2d(64)
+        self.bn2 = nn.BatchNorm2d(16)
 
-        self.conv3_1 = nn.Conv2d(64, 128, 3)
-        self.conv3_2 = nn.Conv2d(128, 128, 3)
+        self.conv3_1 = nn.Conv2d(16, 32, 3)
+        self.conv3_2 = nn.Conv2d(32, 32, 3)
         nn.init.kaiming_normal_(self.conv3_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv3_2.weight, a=0.1)
         self.conv3_1.bias.data.zero_()
         self.conv3_2.bias.data.zero_()
-		self.bn3 = nn.BatchNorm2d(128)
+        self.bn3 = nn.BatchNorm2d(32)
 
-        self.conv4_1 = nn.Conv2d(128, 256, 3)
-        self.conv4_2 = nn.Conv2d(256, 256, 3)
+        self.conv4_1 = nn.Conv2d(32, 64, 3)
+        self.conv4_2 = nn.Conv2d(64, 64, 3)
         nn.init.kaiming_normal_(self.conv4_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv4_2.weight, a=0.1)
         self.conv4_1.bias.data.zero_()
         self.conv4_2.bias.data.zero_()
-        self.bn4 = nn.BatchNorm2d(256)
+        self.bn4 = nn.BatchNorm2d(64)
 
         self.pool = nn.MaxPool2d(2, 2)
 
         # Decoder
-        self.upconv1 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.conv6_1 = nn.Conv2d(256, 128, 3)
-        self.conv6_2 = nn.Conv2d(128, 128, 3)
+        self.upconv1 = nn.ConvTranspose2d(64, 32, 2, stride=2)
+        self.conv6_1 = nn.Conv2d(64, 32, 3)
+        self.conv6_2 = nn.Conv2d(32, 32, 3)
         nn.init.kaiming_normal_(self.conv6_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv6_2.weight, a=0.1)
         self.conv6_1.bias.data.zero_()
         self.conv6_2.bias.data.zero_()
 
-        self.upconv2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.conv7_1 = nn.Conv2d(128, 64, 3)
-        self.conv7_2 = nn.Conv2d(64, 64, 3)
+        self.upconv2 = nn.ConvTranspose2d(32, 16, 2, stride=2)
+        self.conv7_1 = nn.Conv2d(32, 16, 3)
+        self.conv7_2 = nn.Conv2d(16, 16, 3)
         nn.init.kaiming_normal_(self.conv7_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv7_2.weight, a=0.1)
         self.conv7_1.bias.data.zero_()
         self.conv7_2.bias.data.zero_()
 
-        self.upconv3 = nn.ConvTranspose2d(64, 32, 2, stride=2)
-        self.conv8_1 = nn.Conv2d(64, 32, 3)
-        self.conv8_2 = nn.Conv2d(32, 32, 3)
+        self.upconv3 = nn.ConvTranspose2d(16, 8, 2, stride=2)
+        self.conv8_1 = nn.Conv2d(16, 8, 3)
+        self.conv8_2 = nn.Conv2d(8, 8, 3)
         nn.init.kaiming_normal_(self.conv8_1.weight, a=0.1)
         nn.init.kaiming_normal_(self.conv8_2.weight, a=0.1)
         self.conv8_1.bias.data.zero_()
         self.conv8_2.bias.data.zero_()
 
         # Output
-        self.out = nn.Conv2d(32, self.n_classes, kernel_size=1)
+        self.out = nn.Conv2d(8, self.n_classes, kernel_size=1)
         nn.init.kaiming_normal_(self.out.weight, a=0.1)
         self.out.bias.data.zero_()
 

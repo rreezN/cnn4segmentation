@@ -107,7 +107,7 @@ def augment_image(img, label):
         augmented_label = cropped_label.resize(img.size)
 
     # Elastic transform
-    elasticTransfrom = Compose(ElasticTransform(alpha=40, sigma=5, alpha_affine=10, approximate=True, p=0.5))
+    elasticTransfrom = Compose(ElasticTransform(alpha=35, sigma=5, alpha_affine=5, approximate=True, p=0.5))
     aug = elasticTransfrom(image=np.array(augmented_img), mask=np.array(augmented_label))
     augmented_img = Image.fromarray(aug["image"])
     augmented_label = Image.fromarray(aug["mask"])
@@ -159,8 +159,8 @@ def main(input_filepath, output_filepath):
         label = Image.open(train_label)
 
         # Get names
-        img_name = train_img.split('/')[-1].split('.')[0]
-        label_name = train_label.split('/')[-1].split('.')[0]
+        img_name = train_img.split('\\')[-1].split('.')[0]
+        label_name = train_label.split('\\')[-1].split('.')[0]
 
         # Augment
         for j in range(100):
