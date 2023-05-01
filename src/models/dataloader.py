@@ -4,10 +4,12 @@ import torch
 import numpy as np
 
 
-def standardiseTransform(data, mean, std):
+def standardiseTransform(data, mean, std, standardise):
     # Standardise data
-    return (data - mean) / std
-    # return data * 2.0 / 255 - 1.0
+    if standardise == "standardise":
+        return (data - mean) / std
+    else:
+        return data * 2.0 / 255 - 1.0
 
 
 class dataset(Dataset):
@@ -33,7 +35,8 @@ class MyDataModule(pl.LightningDataModule):
             val_data=None,
             val_labels=None,
             test_data=None,
-            test_labels=None
+            test_labels=None,
+            standardise="standardise"
     ):
         super().__init__()
         # batch_dict contains the batch scheduling
@@ -47,6 +50,7 @@ class MyDataModule(pl.LightningDataModule):
         self.init_val_labels = val_labels
         self.init_test_data = test_data
         self.init_test_labels = test_labels
+        self.standardise = standardise
 
     def setup(self, stage=None):
         # Assign train/val/test datasets for use in dataloaders
@@ -62,7 +66,7 @@ class MyDataModule(pl.LightningDataModule):
         std = torch.std(train_data)
 
         # Standardise train data
-        train_data = standardiseTransform(train_data, mu, std)
+        train_data = standardiseTransform(train_data, mu, std, self.standardise)
         self.train_data = dataset(train_data, train_labels)
 
         # Standardise val data
@@ -71,7 +75,7 @@ class MyDataModule(pl.LightningDataModule):
 
         val_data = torch.unsqueeze(torch.tensor(val_data, dtype=torch.float32), 1)
         val_labels = torch.tensor(val_labels != 255).long()
-        val_data = standardiseTransform(val_data, mu, std)
+        val_data = standardiseTransform(val_data, mu, std, self.standardise)
         self.val_data = dataset(val_data, val_labels)
 
         # Standardise test data
@@ -80,7 +84,7 @@ class MyDataModule(pl.LightningDataModule):
 
         test_data = torch.unsqueeze(torch.tensor(test_data, dtype=torch.float32), 1)
         test_labels = torch.tensor(test_labels != 255).long()
-        test_data = standardiseTransform(test_data, mu, std)
+        test_data = standardiseTransform(test_data, mu, std, self.standardise)
         self.test_data = dataset(test_data, test_labels)
 
     def train_dataloader(self):

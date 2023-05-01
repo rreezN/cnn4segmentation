@@ -12,17 +12,20 @@ from pytorch_lightning.loggers import WandbLogger
 
 PARAMS = {
     "model_name": "UNerveV1",
-    "project_name": "Wet-Bone-rrr",
+    "project_name": "Sweaty-Bone-rrr",
     "seed": 110,
     "n_channels": 1,
     "n_classes": 2,
-    "num_epochs": 50,
+    "num_epochs": 30,
     "patience": 30,
-    "learning_rate": 3e-4,
-    "dropout": 0.2,
-    "batch_dict": {0: 4},
+    "batch_dict": {
+        0: 4,
+        4: 8,
+        8: 16,
+        16: 32,
+    },
     "accelerator": "cuda" if torch.cuda.is_available() else "cpu",
-    "limit_train_batches": 0.6,
+    "limit_train_batches": 1.0,
     "optimizer": "adam",
     "loss_function": "cross_entropy",
     "activation_function": "ReLU",
@@ -34,7 +37,8 @@ torch.manual_seed(PARAMS["seed"])
 np.random.seed(PARAMS["seed"])
 
 
-def train() -> None:
+def train(hparams: Dict[str, Any]) -> None:
+    PARAMS.update(hparams)
     if PARAMS["model_name"] == "UNerveV1":
         model = UNerveV1(PARAMS)
     elif PARAMS["model_name"] == "UNerveV2":
@@ -75,7 +79,8 @@ def train() -> None:
 
     data_loader = MyDataModule(batch_dict=PARAMS["batch_dict"],
                                device=PARAMS["accelerator"],
-                               data_size=PARAMS["data_size"])
+                               data_size=PARAMS["data_size"],
+                               standardise=PARAMS["standardise"])
 
     trainer.fit(model, datamodule=data_loader)
     trainer.test(model, datamodule=data_loader)
@@ -85,7 +90,7 @@ def train_sweep() -> None:
     with open('./sweep.yaml') as file:
         sweep_config = yaml.load(file, Loader=yaml.FullLoader)
 
-    sweep_id = wandb.sweep(sweep=sweep_config, project=PARAMS["project_name"], entity="audiobots")
+    sweep_id = wandb.sweep(sweep=sweep_config, project=PARAMS["project_name"], entity="nerve-poster")
 
     def sweep_run() -> None:
         with wandb.init() as run:
@@ -96,11 +101,11 @@ def train_sweep() -> None:
 
 
 if __name__ == "__main__":
-    # train_sweep()
+    train_sweep()
     # hparams = {"learning_rate": 1e-3,
     #            "optimizer": "adam",
     #            "loss_function": "cross_entropy",
     #            "activation_function": "ReLU",
     #            "dropout": 0.3}
     # train(hparams)
-    train()
+    # train()
