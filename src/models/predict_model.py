@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from glob import glob
 from PIL import Image
 
-from torchsummary import summary
 # sys.path.insert(0, 'C:/Users/kr_mo/OneDrive-DTU/DTU/Andet/Oticon/AudioBots/')
 # basedir = 'C:/Users/kr_mo/OneDrive-DTU/DTU/Andet/Oticon/AudioBots/'
 
@@ -54,14 +53,15 @@ def evaluate(model_filepath):
 
     preds = model(test_data_.to(device))
 
-    fig, axes = plt.subplots(5, 3, figsize=(10, 16))
-    for i in range(5):
+    fig, axes = plt.subplots(2, 4, figsize=(9, 5))
+    for i in range(4):
         image_array = torch.argmax(preds[i].view(1, 2, 420, 420), 1)[0].detach().cpu().numpy()
         test_img = CenterCrop(420)(test_data[i][0]).numpy()
-        axes[i, 0].imshow(test_img, cmap="gray")
-        axes[i, 1].imshow(test_img, cmap="gray")
-        axes[i, 1].imshow(image_array, cmap="Wistia_r", alpha=0.2)
-        axes[i, 2].imshow(preds[i][0].detach().cpu().numpy(), cmap="gray")
+        axes[0, i].imshow(test_img, cmap="gray")
+        # axes[1, i].imshow(test_img, cmap="gray")
+        # axes[1, i].imshow(image_array, cmap="Wistia_r", alpha=0.2)
+        axes[1, i].imshow(image_array, cmap="gray")
+        # axes[1, i].imshow(preds[i][0].detach().cpu().numpy(), cmap="gray")
     plt.tight_layout()
     plt.show()
 
