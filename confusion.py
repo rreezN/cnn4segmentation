@@ -19,7 +19,7 @@ def get_cm(label_matrix, prediction_matrix):
     return p_cm
 
 
-def plot_cm(matrix):
+def plot_cm(matrix, save_pdf=False):
     # Set up the figure and axis for the plot
     fig, ax = plt.subplots(figsize=(6, 6))
 
@@ -39,6 +39,8 @@ def plot_cm(matrix):
     ax.set_yticks(np.arange(len(class_labels)) + 0.5)
 
     # Display the plot
+    if save_pdf:
+        plt.savefig("confusion_matrix.pdf", bbox_inches="tight")
     plt.show()
 
 
@@ -52,4 +54,4 @@ if __name__ == '__main__':
     # Example plot_cm
     M = np.array([[0.98, 0.02],
                   [0.10, 0.90]])
-    plot_cm(M)
+    plot_cm(M, save_pdf=True)
