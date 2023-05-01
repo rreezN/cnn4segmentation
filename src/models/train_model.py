@@ -19,10 +19,7 @@ PARAMS = {
     "num_epochs": 30,
     "patience": 30,
     "batch_dict": {
-        0: 4,
-        4: 8,
-        8: 16,
-        16: 32,
+        0: 4
     },
     "accelerator": "cuda" if torch.cuda.is_available() else "cpu",
     "limit_train_batches": 1.0,

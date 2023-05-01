@@ -226,6 +226,9 @@ class CNN4AugBase(LightningModule):
     def loss_func(self, y_hat, y):
         if self.loss_function == "cross_entropy":
             return F.cross_entropy(y_hat, y)
+        elif self.loss_function == "weighted_cross_entropy":
+            l = F.cross_entropy(y_hat, y, reduction='none')
+            return l
         # elif self.loss_function == "focal_loss":
         #     return focal_loss(y_hat, y)
         else:
