@@ -5,6 +5,7 @@ from torchvision.transforms import CenterCrop
 from dataloader import standardiseTransform
 from model import UNerveV1
 import numpy as np
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from glob import glob
 from PIL import Image
@@ -56,8 +57,10 @@ def confusion_matrix(true_background, true_nerve, false_background, false_nerve)
     df = pd.DataFrame([[true_background, false_background], [false_nerve, true_nerve]], columns=labs, index=labs)
     df.index.name = 'True'
     df.columns.name = 'Predicted'
-    sns.heatmap(df, annot=True, cmap="coolwarm", fmt=".2%")
-    plt.show()
+    sns.heatmap(df, annot=True, cmap="coolwarm", square=True, fmt='.2%',
+                annot_kws={'size': 16}, linewidth=.5)
+    plt.savefig("reports/figures/conf_mat.pdf")
+    plt.close()
 
 @click.command()
 @click.argument("model_filepath", type=click.Path(exists=True))
@@ -96,10 +99,13 @@ def evaluate(model_filepath):
 
     ds = dataset(test_data_, test_labels)
     dl = DataLoader(ds, batch_size=4, shuffle=False)
+    loss = 0
     for i, (data, labels) in enumerate(dl):
         data = data.to(device)
         labels = labels.to(device)
         preds = model(data)
+        loss += F.cross_entropy(preds, labels).item()
+
         true_background_, true_nerve_, false_background_, false_nerve_ = evaluate_predictions(preds, labels)
         true_background += true_background_
         true_nerve += true_nerve_
@@ -107,6 +113,7 @@ def evaluate(model_filepath):
         false_nerve += false_nerve_
 
     confusion_matrix(true_background, true_nerve, false_background, false_nerve)
+    print("Test loss: ", loss / len(dl))
 
     fig, axes = plt.subplots(2, 4, figsize=(9, 5))
     axes[0, 0].set_ylabel("Test Images")
@@ -124,7 +131,9 @@ def evaluate(model_filepath):
         axes[1, i].set_yticks([])
         # axes[1, i].imshow(real_preds[i][0].detach().cpu().numpy(), cmap="gray")
     plt.tight_layout()
-    plt.show()
+    plt.savefig("reports/figures/real_test_predictions.pdf")
+    plt.close()
+    # lt.show()
 
 
 
